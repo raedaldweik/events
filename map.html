@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dubai Events Map</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+
+  <!-- Use Mapbox GL JS v3.7.0 (matching your previous working snippet) -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+  <link
+    href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* BASIC PAGE SETUP */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+
+    /* MAP */
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    /* CALENDAR CONTAINER */
+    .calendar-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+      background: #fff; /* changed to pure white */
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      min-width: 260px;
+    }
+    .calendar-container h2 {
+      margin: 0 0 12px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    /* CALENDAR TABLE */
+    .calendar {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #ddd;
+      font-size: 15px;
+    }
+    .calendar th {
+      text-align: center;
+      font-weight: normal;
+      padding: 8px 0;
+      background: #007aff; /* blue header */
+      color: #fff;
+    }
+    .calendar td {
+      text-align: center;
+      padding: 10px 0;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      vertical-align: middle;
+      transition: background 0.2s;
+      background: #fff;
+    }
+    .calendar td:hover {
+      background: #f2f9ff; /* subtle hover highlight */
+    }
+    /* WEEKEND COLORS */
+    .calendar th:nth-child(1),
+    .calendar td:nth-child(1),
+    .calendar th:nth-child(7),
+    .calendar td:nth-child(7) {
+      color: #ffdddd; /* or #ffd9d9 for a soft red tone in the header */
+    }
+
+    /* RE-CENTER BUTTON */
+    .recenter-button {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      background-color: #007aff;
+      color: #fff;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .recenter-button:hover {
+      background-color: #005bb5;
+    }
+
+    /* FULLSCREEN POPUP OVERLAY */
+    .popup-overlay {
+      position: fixed;
+      display: none; /* Hidden by default, made visible on marker click */
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-content {
+      background: #fff;
+      /* Fill 90% of screen to meet your request */
+      width: 90vw;
+      height: 90vh;
+      text-align: center;
+      border-radius: 10px;
+      position: relative;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto; /* So content can scroll if it exceeds 90% height */
+    }
+    .popup-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 18px;
+      background: none;
+      border: none;
+      font-weight: bold;
+    }
+    .popup-close:hover {
+      color: #f00;
+    }
+    /* Image in the popup */
+    .popup-content img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MAP CONTAINER -->
+  <div id="map"></div>
+
+  <!-- CALENDAR CONTAINER -->
+  <div class="calendar-container">
+    <h2>February</h2>
+    <table class="calendar">
+      <thead>
+        <tr>
+          <th>Sun</th>
+          <th>Mon</th>
+          <th>Tue</th>
+          <th>Wed</th>
+          <th>Thu</th>
+          <th>Fri</th>
+          <th>Sat</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+          <td onclick="setDay(1)">1</td> 
+        </tr>
+        <tr>
+          <td onclick="setDay(2)">2</td>
+          <td onclick="setDay(3)">3</td>
+          <td onclick="setDay(4)">4</td>
+          <td onclick="setDay(5)">5</td>
+          <td onclick="setDay(6)">6</td>
+          <td onclick="setDay(7)">7</td>
+          <td onclick="setDay(8)">8</td>
+        </tr>
+        <tr>
+          <td onclick="setDay(9)">9</td>
+          <td onclick="setDay(10)">10</td>
+          <td onclick="setDay(11)">11</td>
+          <td onclick="setDay(12)">12</td>
+          <td onclick="setDay(13)">13</td>
+          <td onclick="setDay(14)">14</td>
+          <td onclick="setDay(15)">15</td>
+        </tr>
+        <tr>
+          <td onclick="setDay(16)">16</td>
+          <td onclick="setDay(17)">17</td>
+          <td onclick="setDay(18)">18</td>
+          <td onclick="setDay(19)">19</td>
+          <td onclick="setDay(20)">20</td>
+          <td onclick="setDay(21)">21</td>
+          <td onclick="setDay(22)">22</td>
+        </tr>
+        <tr>
+          <td onclick="setDay(23)">23</td>
+          <td onclick="setDay(24)">24</td>
+          <td onclick="setDay(25)">25</td>
+          <td onclick="setDay(26)">26</td>
+          <td onclick="setDay(27)">27</td>
+          <td onclick="setDay(28)">28</td>
+          <td onclick="setDay(29)">29</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RE-CENTER BUTTON -->
+  <button class="recenter-button" onclick="recenterMap()">Re-center</button>
+
+  <!-- POPUP FOR FIRST EVENT -->
+  <div id="popup1" class="popup-overlay">
+    <div class="popup-content">
+      <button class="popup-close" onclick="togglePopup('popup1')">X</button>
+      <!-- Embedded or "linked" content from your website -->
+      <img src="https://raedaldweik.github.io/events/event.png" alt="Event 1 Image">
+    </div>
+  </div>
+
+  <!-- POPUP FOR SECOND EVENT -->
+  <div id="popup2" class="popup-overlay">
+    <div class="popup-content">
+      <button class="popup-close" onclick="togglePopup('popup2')">X</button>
+      <img src="https://raedaldweik.github.io/events/event.png" alt="Event 2 Image">
+    </div>
+  </div>
+
+  <script>
+    // MAPBOX ACCESS TOKEN
+    mapboxgl.accessToken =
+      'pk.eyJ1IjoicmFlZGR3ZWlrIiwiYSI6ImNtMTZqZGtpeTBta2cydnM4NjBkenhsMG8ifQ.r3ufHWJMoGh_DCH3XDhDAg';
+
+    // INITIAL MAP VIEW
+    const initialCenter = [55.157236, 25.010171];
+    const initialZoom = 10;
+    const initialPitch = 0;
+    const initialBearing = 0;
+
+    // CREATE THE MAP
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/raeddweik/cm456cywa008c01r1epnr5t1n',
+      center: initialCenter,
+      zoom: initialZoom,
+      pitch: initialPitch,
+      bearing: initialBearing
+    });
+
+    // MARKER COORDINATES (Adjust as needed)
+    const event1Coords = [55.1835, 25.1331]; // near Burj Khalifa
+    const event2Coords = [55.180719, 24.875234]; // random point in Dubai
+
+    // ADD MARKERS
+    const marker1 = new mapboxgl.Marker({ color: 'red' })
+      .setLngLat(event1Coords)
+      .addTo(map);
+
+    const marker2 = new mapboxgl.Marker({ color: 'blue' })
+      .setLngLat(event2Coords)
+      .addTo(map);
+
+    // CLICK EVENTS FOR MARKERS -> SHOW FULL POPUP
+    marker1.getElement().addEventListener('click', () => {
+      togglePopup('popup1');
+    });
+    marker2.getElement().addEventListener('click', () => {
+      togglePopup('popup2');
+    });
+
+    // OPTIONAL: 3D BUILDINGS
+    map.on('load', () => {
+      try {
+        const styleLayers = map.getStyle().layers;
+        let labelLayerId = null;
+        if (styleLayers) {
+          for (let i = 0; i < styleLayers.length; i++) {
+            const layer = styleLayers[i];
+            if (
+              layer.type === 'symbol' &&
+              layer.layout &&
+              layer.layout['text-field']
+            ) {
+              labelLayerId = layer.id;
+              break;
+            }
+          }
+        }
+
+        // Attempt to add 3D buildings if the 'composite' source is present
+        const sources = map.getStyle().sources;
+        if (sources['composite']) {
+          map.addLayer(
+            {
+              id: '3d-buildings',
+              source: 'composite',
+              'source-layer': 'building',
+              filter: ['==', 'extrude', 'true'],
+              type: 'fill-extrusion',
+              minzoom: 15,
+              paint: {
+                'fill-extrusion-color': '#aaa',
+                'fill-extrusion-height': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  15,
+                  0,
+                  15.05,
+                  ['get', 'height']
+                ],
+                'fill-extrusion-base': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  15,
+                  0,
+                  15.05,
+                  ['get', 'min_height']
+                ],
+                'fill-extrusion-opacity': 0.6
+              }
+            },
+            labelLayerId
+          );
+        } else {
+          console.warn('No "composite" source found. 3D building layer not added.');
+        }
+      } catch (err) {
+        console.warn('Error adding 3D buildings:', err);
+      }
+    });
+
+    // FLY-TO LOGIC
+    function flyToEvent(coords) {
+      map.flyTo({
+        center: coords,
+        zoom: 17,
+        pitch: 60,
+        bearing: 25,
+        essential: true
+      });
+    }
+
+    // CALENDAR DAY CLICK -> FLY TO EVENT 1 OR 2
+    function setDay(day) {
+      if (day >= 11 && day <= 13) {
+        flyToEvent(event1Coords);
+      } else {
+        flyToEvent(event2Coords);
+      }
+    }
+
+    // POPUP TOGGLING
+    function togglePopup(popupId) {
+      const popup = document.getElementById(popupId);
+      // If popup is already open, close it; otherwise open it
+      if (popup.style.display === 'flex') {
+        popup.style.display = 'none';
+      } else {
+        popup.style.display = 'flex';
+      }
+    }
+
+    // RE-CENTER BUTTON LOGIC
+    function recenterMap() {
+      map.flyTo({
+        center: initialCenter,
+        zoom: initialZoom,
+        pitch: initialPitch,
+        bearing: initialBearing,
+        essential: true
+      });
+    }
+  </script>
+</body>
+</html>
